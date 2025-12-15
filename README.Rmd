@@ -1,0 +1,46 @@
+---
+title: "README"
+output: html_document
+---
+
+## Installation
+
+You can install the development version of CardioPred from [GitHub](https://github.com/) with:
+
+```r
+# install.packages("remotes")
+remotes::install_github("XXX/CardioPred")
+```
+
+## Usage Example
+
+```{r example}
+library(CardioPred)
+
+# Simulate an example
+test_patient <- data.frame(
+  age = 55,
+  gender = factor(1), 
+  height = 160,
+  weight = 65,
+  ap_hi = 125,
+  ap_lo = 80,
+  cholesterol = factor(1),
+  gluc = factor(1),
+  smoke = 0,
+  alco = 0,
+  active = 1
+)
+
+# 1. Use XGBoost to predict
+pred_xgb <- predict_cardio(test_patient, model_type = "xgboost")
+print(paste("XGBoost Prediction:", pred_xgb))
+
+# 2. Use GLM to predict
+pred_glm <- predict_cardio(test_patient, model_type = "glm")
+print(paste("GLM Prediction:", pred_glm))
+
+# 3. Use RandomForest to predict
+pred_rf <- predict_cardio(test_patient, model_type = "rf")
+print(paste("RF Prediction:", pred_rf))
+```
