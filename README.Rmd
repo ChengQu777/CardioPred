@@ -9,7 +9,7 @@ You can install the development version of CardioPred from [GitHub](https://gith
 
 ```r
 # install.packages("remotes")
-remotes::install_github("XXX/CardioPred")
+remotes::install_github("ChengQu777/CardioPred")
 ```
 
 ## Usage Example
