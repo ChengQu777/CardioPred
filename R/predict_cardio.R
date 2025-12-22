@@ -6,6 +6,8 @@
 #'
 #' @param new_data A data.frame. Must contain the feature columns used during training
 #' @param model_type A character string specifying the model to use. Options:
+#' @import randomForest
+#' @importFrom stats predict
 #' \itemize{
 #'   \item "xgboost" (default) - Extreme Gradient Boosting
 #'   \item "glm" - Logistic Regression

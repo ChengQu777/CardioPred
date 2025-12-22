@@ -9,12 +9,7 @@ predict_cardio(new_data, model_type = c("xgboost", "glm", "rf"))
 \arguments{
 \item{new_data}{A data.frame. Must contain the feature columns used during training}
 
-\item{model_type}{A character string specifying the model to use. Options:
-\itemize{
-  \item "xgboost" (default) - Extreme Gradient Boosting
-  \item "glm" - Logistic Regression
-  \item "rf" - Random Forest
-}}
+\item{model_type}{A character string specifying the model to use. Options:}
 }
 \value{
 An integer vector: 0 indicates no disease, 1 indicates disease.
