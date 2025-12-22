@@ -45,13 +45,13 @@ library(CardioPred)
 # Simulate an example
 test_patient <- data.frame(
   age = 55,
-  gender = factor(1), 
+  gender = 1, 
   height = 160,
   weight = 65,
   ap_hi = 125,
   ap_lo = 80,
-  cholesterol = factor(1),
-  gluc = factor(1),
+  cholesterol = 1,
+  gluc = 1,
   smoke = 0,
   alco = 0,
   active = 1

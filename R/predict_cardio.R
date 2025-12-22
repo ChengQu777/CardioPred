@@ -5,7 +5,6 @@
 #' and returns a binary prediction outcome (0 or 1).
 #'
 #' @param new_data A data.frame. Must contain the feature columns used during training
-#' (e.g., age, gender, height, weight, ap_hi, ap_lo, cholesterol, gluc, smoke, alco, active).
 #' @param model_type A character string specifying the model to use. Options:
 #' \itemize{
 #'   \item "xgboost" (default) - Extreme Gradient Boosting
@@ -32,75 +31,80 @@
 predict_cardio <- function(new_data, model_type = c("xgboost", "glm", "rf")) {
 
   # 1. Validate arguments
-  model_type <- match.arg(model_type) # Ensures the input matches one of the options
+  model_type <- match.arg(model_type)
 
   if (!is.data.frame(new_data)) {
     stop("Input 'new_data' must be a data.frame")
   }
 
-  # 2. Ensure necessary columns exist
-  # We add a dummy 'cardio' column so that model.matrix() can run the formula correctly.
-  # This value does not affect the feature generation.
+  # === CRITICAL FIX: Enforce Data Types and Factor Levels ===
+  # We loop through the training prototype columns to ensure new_data matches exactly.
+  # This fixes the "contrasts" error and "type mismatch" error.
+
+  # Ensure 'cardio' column exists for model.matrix formula (dummy value)
   if (!"cardio" %in% colnames(new_data)) {
     new_data$cardio <- 0
   }
 
+  # Align types with training data
+  for (col_name in colnames(train_prototype)) {
+    # Only process if this column exists in input (skip 'cardio' if user didn't provide it)
+    if (col_name %in% colnames(new_data)) {
+
+      target_class <- class(train_prototype[[col_name]])[1] # get primary class
+
+      # If training data was Factor, force input to be Factor with SAME levels
+      if ("factor" %in% target_class) {
+        new_data[[col_name]] <- factor(new_data[[col_name]],
+                                       levels = levels(train_prototype[[col_name]]))
+      }
+      # If training data was Numeric/Integer, force input to be numeric
+      else if ("numeric" %in% target_class || "integer" %in% target_class) {
+        new_data[[col_name]] <- as.numeric(new_data[[col_name]])
+      }
+    }
+  }
+
+  # ==========================================================
+
   # 3. Branch logic based on model type
 
   if (model_type == "xgboost") {
-    # === XGBoost Logic (Requires Matrix Alignment) ===
 
-    # Generate the model matrix using the same formula as training
-    # na.action = na.pass allows missing values (handled by XGBoost)
+    # Generate model matrix
+    # Now that factors are fixed with correct levels, model.matrix works correctly
     X_test_matrix <- stats::model.matrix(cardio ~ . - 1, data = new_data)
 
-    # Align column names:
-    # Ensure the columns strictly match the training data (saved in train_col_names).
-    # If a column is missing (e.g., a specific factor level), fill it with 0.
-    required_cols <- train_col_names
-
-    # Create a container matrix with zeros
+    # Align column names for XGBoost
+    required_cols <- train_col_xgb_names
     final_matrix <- matrix(0, nrow = nrow(X_test_matrix), ncol = length(required_cols))
     colnames(final_matrix) <- required_cols
 
-    # Fill in the available data
     common_cols <- intersect(colnames(X_test_matrix), required_cols)
     final_matrix[, common_cols] <- X_test_matrix[, common_cols]
 
-    # Convert to xgb.DMatrix format
-    dtest <- xgboost::xgb.DMatrix(data = final_matrix)
+    dtest <- xgboost::xgb.DMatrix(final_matrix, label=new_data$cardio)
 
-    # Predict probabilities
     prob_preds <- predict(xgb_fit, dtest)
-
-    # Convert probabilities to class labels (Threshold: 0.5)
     class_preds <- ifelse(prob_preds > 0.5, 1, 0)
 
   } else if (model_type == "glm") {
-    # === GLM Logic ===
 
-    # Predict using the Logistic Regression model
-    # type="response" returns probabilities
+    # Now valid because we fixed factor types above
     prob_preds <- predict(glm_fit, newdata = new_data, type = "response")
     class_preds <- ifelse(prob_preds > 0.5, 1, 0)
 
   } else if (model_type == "rf") {
-    # === Random Forest Logic ===
 
-    # Random Forest requires factor levels in new_data to match training data exactly.
-    # Assuming the input data is correctly formatted:
+    # Now valid because factor levels match perfectly
     preds <- predict(rf_fit, newdata = new_data)
 
-    # Handle output format (RF can output class or probability depending on config)
     if (is.factor(preds)) {
-      # If output is factor class labels
       class_preds <- as.numeric(as.character(preds))
     } else {
-      # If output is probability or numeric
       class_preds <- ifelse(preds > 0.5, 1, 0)
     }
   }
 
   return(as.integer(class_preds))
 }
-
